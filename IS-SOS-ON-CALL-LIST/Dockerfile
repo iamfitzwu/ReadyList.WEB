@@ -1,4 +1,4 @@
-FROM node:18-alpine AS node
+FROM node:20-alpine AS node
 
 FROM nginx:stable-alpine
 
