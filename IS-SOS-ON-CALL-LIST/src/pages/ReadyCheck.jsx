@@ -9,7 +9,12 @@ import * as XLSX from 'xlsx';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const apiClient = axios.create();
+const apiClient = axios.create({
+  baseURL: import.meta.env.SERVER_URL || '',
+  headers: {
+    'X-API-KEY': import.meta.env.TOKEN_KEY || ''
+  }
+});
 
 const ReadyCheck = () => {
   const [data, setData] = useState([]);
