@@ -19,7 +19,7 @@ const apiClient = axios.create({
 const ReadyCheck = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(dayjs().tz('Asia/Shanghai'));
+  const [selectedDate, setSelectedDate] = useState(null);
   const [exportModalVisible, setExportModalVisible] = useState(false);
   const [exportRange, setExportRange] = useState({
     startDate: dayjs().subtract(7, 'day'),
@@ -28,8 +28,19 @@ const ReadyCheck = () => {
 
   const allEcologies = ['RAIN.L', 'ANSON.G', 'MARS.PENG', 'TOM.L', 'BERTON.L', 'CARRY.Y'];
 
+  const getDisplayDate = (date) => {
+    const shanghaiTime = date.tz('Asia/Shanghai');
+    const currentHour = shanghaiTime.hour();
+    
+    if (currentHour < 15)
+      return shanghaiTime.subtract(1, 'day');
+    
+    return shanghaiTime;
+  };
+
   useEffect(() => {
-    fetchData();
+    const initialDate = getDisplayDate(dayjs().tz('Asia/Shanghai'));
+    fetchData(initialDate);
   }, []);
 
   const fetchData = async (date = selectedDate) => {
@@ -38,6 +49,7 @@ const ReadyCheck = () => {
       const formattedDate = date.format('YYYY-MM-DD');
       const url = `/api/ReadyTime/duty/persons?date=${formattedDate}`;
       console.log('請求 URL:', url);
+      console.log('查詢日期:', formattedDate);
       const response = await apiClient.get(url);
       console.log('響應數據:', response.data);
       
@@ -48,15 +60,13 @@ const ReadyCheck = () => {
         if (found) {
           return {
             key: ecology,
-            date: dayjs(found.date).format('YYYY-MM-DD'),
             ecology: found.ecology,
             dutyPerson: found.dutyPerson,
-            readyTime: dayjs.utc(found.readyTime).format('HH:mm'),
+            readyTime: dayjs.utc(found.readyTime).format('YYYY-MM-DD HH:mm'),
           };
         }
         return {
           key: ecology,
-          date: date.format('YYYY-MM-DD'),
           ecology: ecology,
           dutyPerson: '無',
           readyTime: '無',
@@ -79,12 +89,15 @@ const ReadyCheck = () => {
       const end = exportRange.endDate.format('YYYY-MM-DD');
       
       const dateRange = [];
-      let currentDate = exportRange.startDate.clone();
+      let currentDate = exportRange.startDate.clone().startOf('day');
+      const endDate = exportRange.endDate.clone().startOf('day');
       
-      while (currentDate <= exportRange.endDate) {
+      while (currentDate.format('YYYY-MM-DD') <= endDate.format('YYYY-MM-DD')) {
         dateRange.push(currentDate.clone());
         currentDate = currentDate.add(1, 'day');
       }
+      
+      console.log('導出日期範圍:', dateRange.map(d => d.format('YYYY-MM-DD')));
       
       const responses = await Promise.all(
         dateRange.map(date => 
@@ -140,12 +153,6 @@ const ReadyCheck = () => {
 
   const columns = [
     {
-      title: '日期（CST）',
-      dataIndex: 'date',
-      key: 'date',
-      align: 'center',
-    },
-    {
       title: '所屬5M生態',
       dataIndex: 'ecology',
       key: 'ecology',
@@ -158,7 +165,7 @@ const ReadyCheck = () => {
       align: 'center',
     },
     {
-      title: 'ready時間',
+      title: 'ready時間(CST)',
       dataIndex: 'readyTime',
       key: 'readyTime',
       align: 'center',
@@ -187,14 +194,24 @@ const ReadyCheck = () => {
           borderBottom: '1px solid #f0f0f0',
           paddingBottom: '16px'
         }}>
-          <h1 style={{ 
-            margin: 0,
-            fontSize: '24px',
-            color: '#1890ff',
-            fontWeight: '500'
-          }}>
-            Ready Check List
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', flex: 1 }}>
+            <h1 style={{ 
+              margin: 0,
+              fontSize: '24px',
+              color: '#1890ff',
+              fontWeight: '500'
+            }}>
+              Ready Check List
+            </h1>
+            <div style={{
+              fontSize: '12px',
+              color: '#8c8c8c',
+              lineHeight: '1.5',
+              paddingBottom: '2px'
+            }}>
+              若當前無ON CALL人員名單表示ON CALL人員未ready，如需ON CALL支持請聯繫對應生態5M。
+            </div>
+          </div>
           <div style={{ 
             display: 'flex',
             gap: '8px',
