@@ -204,8 +204,8 @@ const ReadyCheck = () => {
               Ready Check List
             </h1>
             <div style={{
-              fontSize: '12px',
-              color: '#8c8c8c',
+              fontSize: '16px',
+              color: '#ff4d4f',
               lineHeight: '1.5',
               paddingBottom: '2px'
             }}>
